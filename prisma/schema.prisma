@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Identity {
+  id            String   @id
+  userId        String
+  mode          String
+  name          String
+  profile       String
+  memorySummary String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions InterviewSession[]
+}
+
+model JdProfile {
+  id                   String   @id
+  userId               String
+  rawText              String
+  title                String?
+  skillsJson           String   @default("[]")
+  responsibilitiesJson String   @default("[]")
+  seniority            String?
+  focusAreasJson       String   @default("[]")
+  createdAt            DateTime @default(now())
+
+  sessions InterviewSession[]
+}
+
+model QuestionItem {
+  id                   String   @id
+  userId               String
+  question             String
+  skillTagsJson        String   @default("[]")
+  difficulty           String
+  type                 String
+  referenceAnswer      String?
+  evaluationPointsJson String   @default("[]")
+  embeddingJson        String?
+  createdAt            DateTime @default(now())
+}
+
+model InterviewSession {
+  id         String   @id
+  userId     String
+  userRole   String
+  aiRole     String
+  identityId String
+  jdId       String?
+  style      String?
+  difficulty String?
+  status     String   @default("active")
+  summary    String?
+  reportJson String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  identity Identity   @relation(fields: [identityId], references: [id])
+  jd       JdProfile? @relation(fields: [jdId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id        String   @id
+  sessionId String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
