@@ -8,8 +8,15 @@ export type Identity = {
   id: string;
   userId: string;
   mode: IdentityMode;
+  username?: string;
   name: string;
   profile: string;
+  jdId?: string;
+  resumeText?: string;
+  llmProvider?: string;
+  llmBaseUrl?: string;
+  llmModel?: string;
+  hasApiKey?: boolean;
   memorySummary: string;
   createdAt: string;
   updatedAt: string;

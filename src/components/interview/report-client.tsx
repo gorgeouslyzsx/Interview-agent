@@ -17,6 +17,22 @@ export function ReportClient({ sessionId }: ReportClientProps) {
 
     async function loadReport() {
       try {
+        const existingResponse = await fetch(`/api/sessions/${sessionId}/report`, {
+          method: "GET",
+          signal: controller.signal,
+        });
+        const existingData = await existingResponse.json();
+
+        if (!existingResponse.ok) {
+          setError(existingData.error ?? "生成失败");
+          return;
+        }
+
+        if (existingData.report) {
+          setReport(existingData.report);
+          return;
+        }
+
         const response = await fetch(`/api/sessions/${sessionId}/report`, {
           method: "POST",
           signal: controller.signal,

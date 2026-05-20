@@ -17,7 +17,15 @@ describe("buildContextPacket", () => {
     });
 
     expect(packet.cacheablePrefix).toContain("AI 扮演面试官");
+    expect(packet.sessionStaticContext).toContain("Java 后端三年经验");
+    expect(packet.sessionStaticContext).toContain("面试风格：technical");
+    expect(packet.sessionStaticContext).toContain("面试难度：medium");
     expect(packet.dynamicContext).toContain("Redis 回答薄弱");
     expect(packet.dynamicContext).toContain("Redis 缓存穿透");
+    expect(packet.cacheablePrefix).not.toContain("technical");
+    expect(packet.cacheablePrefix).not.toContain("medium");
+    expect(packet.messages[0]).toEqual({ role: "system", content: packet.cacheablePrefix });
+    expect(packet.messages[1]).toEqual({ role: "user", content: packet.sessionStaticContext });
+    expect(packet.messages[2]).toEqual({ role: "user", content: packet.dynamicContext });
   });
 });

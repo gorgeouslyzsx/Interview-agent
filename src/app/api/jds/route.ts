@@ -3,25 +3,26 @@ import { nanoid } from "nanoid";
 import { getPrisma } from "@/lib/db/prisma";
 import { jdUploadSchema } from "@/lib/domain/schemas";
 import { parseJD } from "@/lib/jd/parser";
-import { validateUploadedContent } from "@/lib/guardrails/guardrail";
-
-const DEMO_USER_ID = "demo-user";
+import { reviewUploadedContent } from "@/lib/guardrails/guardrail";
+import { getRequestUserId } from "@/lib/auth/request";
 
 export async function POST(request: Request) {
-  const { rawText } = jdUploadSchema.parse(await request.json());
-  const guard = validateUploadedContent(rawText);
-
-  if (!guard.allowed) {
-    return NextResponse.json({ error: guard.reason }, { status: 400 });
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: "请先登录" }, { status: 401 });
   }
 
-  const parsed = parseJD(rawText);
+  const { rawText } = jdUploadSchema.parse(await request.json());
+  const review = reviewUploadedContent(rawText, "JD");
+  const safeRawText = review.sanitizedText;
+
+  const parsed = parseJD(safeRawText);
   const prisma = getPrisma();
   const jd = await prisma.jdProfile.create({
     data: {
       id: nanoid(),
-      userId: DEMO_USER_ID,
-      rawText,
+      userId,
+      rawText: safeRawText,
       title: parsed.title,
       skillsJson: JSON.stringify(parsed.skills),
       responsibilitiesJson: JSON.stringify(parsed.responsibilities),
@@ -30,5 +31,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ jd, parsed });
+  return NextResponse.json({ jd, parsed, warnings: review.findings, notice: review.notice });
 }

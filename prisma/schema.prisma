@@ -3,21 +3,53 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id
+  email        String   @unique
+  name         String?
+  passwordHash String
+  passwordSalt String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  identities Identity[]
+  jdProfiles JdProfile[]
+  questions  QuestionItem[]
+  sessions   InterviewSession[]
+
+  @@index([createdAt])
 }
 
 model Identity {
   id            String   @id
   userId        String
   mode          String
+  username      String?
+  passwordHash  String?
+  passwordSalt  String?
   name          String
   profile       String
+  jdId          String?
+  resumeText    String?
+  llmProvider   String?
+  llmBaseUrl    String?
+  llmModel      String?
+  llmApiKeyEncrypted String?
   memorySummary String   @default("")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jd       JdProfile? @relation(fields: [jdId], references: [id])
   sessions InterviewSession[]
+
+  @@unique([userId, username])
+  @@index([userId, mode, updatedAt])
+  @@index([jdId])
 }
 
 model JdProfile {
@@ -31,7 +63,11 @@ model JdProfile {
   focusAreasJson       String   @default("[]")
   createdAt            DateTime @default(now())
 
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identities Identity[]
   sessions InterviewSession[]
+
+  @@index([userId, createdAt])
 }
 
 model QuestionItem {
@@ -45,6 +81,11 @@ model QuestionItem {
   evaluationPointsJson String   @default("[]")
   embeddingJson        String?
   createdAt            DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, difficulty])
+  @@index([userId, createdAt])
 }
 
 model InterviewSession {
@@ -56,15 +97,31 @@ model InterviewSession {
   jdId       String?
   style      String?
   difficulty String?
+  resumeText String?
   status     String   @default("active")
   summary    String?
   reportJson String?
+  initialPlanJson String?
+  currentStageId String?
+  lastNextStepPlanJson String?
+  followUpCount Int      @default(0)
+  turnCount   Int      @default(0)
+  evidenceCount Int      @default(0)
+  riskFlagsJson String   @default("[]")
+  skillCoverageJson String @default("{}")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   identity Identity   @relation(fields: [identityId], references: [id])
   jd       JdProfile? @relation(fields: [jdId], references: [id])
   messages Message[]
+  usages   LlmUsage[]
+
+  @@index([userId, updatedAt])
+  @@index([identityId, updatedAt])
+  @@index([jdId])
+  @@index([status, updatedAt])
 }
 
 model Message {
@@ -75,4 +132,22 @@ model Message {
   createdAt DateTime @default(now())
 
   session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model LlmUsage {
+  id                        String   @id
+  sessionId                 String
+  promptTokens              Int
+  completionTokens          Int
+  totalTokens               Int
+  cachedTokens              Int
+  estimatedSavedPromptTokens Int
+  cacheHitRate              Float
+  createdAt                 DateTime @default(now())
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
 }

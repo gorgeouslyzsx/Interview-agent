@@ -2,19 +2,19 @@ import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/db/prisma";
 import { questionUploadSchema } from "@/lib/domain/schemas";
 import { parseQuestionBank } from "@/lib/questions/parser";
-import { validateUploadedContent } from "@/lib/guardrails/guardrail";
-
-const DEMO_USER_ID = "demo-user";
+import { reviewUploadedContent } from "@/lib/guardrails/guardrail";
+import { getRequestUserId } from "@/lib/auth/request";
 
 export async function POST(request: Request) {
-  const { rawText } = questionUploadSchema.parse(await request.json());
-  const guard = validateUploadedContent(rawText);
-
-  if (!guard.allowed) {
-    return NextResponse.json({ error: guard.reason }, { status: 400 });
+  const userId = getRequestUserId(request);
+  if (!userId) {
+    return NextResponse.json({ error: "请先登录" }, { status: 401 });
   }
 
-  const questions = parseQuestionBank(rawText, DEMO_USER_ID);
+  const { rawText } = questionUploadSchema.parse(await request.json());
+  const review = reviewUploadedContent(rawText, "题库");
+
+  const questions = parseQuestionBank(review.sanitizedText, userId);
   const prisma = getPrisma();
 
   await prisma.questionItem.createMany({
@@ -30,5 +30,5 @@ export async function POST(request: Request) {
     })),
   });
 
-  return NextResponse.json({ count: questions.length });
+  return NextResponse.json({ count: questions.length, warnings: review.findings, notice: review.notice });
 }

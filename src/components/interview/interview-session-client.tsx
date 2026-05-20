@@ -2,18 +2,46 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/interview/chat-panel";
 import { ContextSidePanel } from "@/components/interview/context-side-panel";
 
 type InterviewSessionClientProps = {
   sessionId: string;
+  identityName: string;
+  userRole: string;
+  initialMessages: { role: string; content: string }[];
+  initialCacheUsage?: {
+    promptTokens: number;
+    cachedTokens: number;
+    estimatedSavedPromptTokens: number;
+    cacheHitRate: number;
+  };
+  jdSummary?: string | null;
+  memorySummary?: string | null;
 };
 
-export function InterviewSessionClient({ sessionId }: InterviewSessionClientProps) {
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "我们开始吧。你可以先发起第一轮对话。" },
-  ]);
+function formatCacheStats(usage?: InterviewSessionClientProps["initialCacheUsage"]) {
+  if (!usage) return "暂无缓存数据";
+
+  const rate = Math.round((usage.cacheHitRate ?? 0) * 100);
+  return `缓存命中 ${usage.cachedTokens ?? 0}/${usage.promptTokens ?? 0} tokens，计费等价节省 ${
+    usage.estimatedSavedPromptTokens ?? 0
+  } prompt tokens，命中率 ${rate}%`;
+}
+
+export function InterviewSessionClient({
+  sessionId,
+  identityName,
+  userRole,
+  initialMessages,
+  initialCacheUsage,
+  jdSummary,
+  memorySummary,
+}: InterviewSessionClientProps) {
+  const [messages, setMessages] = useState(
+    initialMessages.length > 0 ? initialMessages : [{ role: "assistant", content: "我们开始吧。你可以先发起第一轮对话。" }],
+  );
+  const [cacheStats, setCacheStats] = useState(formatCacheStats(initialCacheUsage));
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -31,6 +59,9 @@ export function InterviewSessionClient({ sessionId }: InterviewSessionClientProp
         body: JSON.stringify({ content: nextInput }),
       });
       const data = await response.json();
+      if (data.usage) {
+        setCacheStats(formatCacheStats(data.usage));
+      }
       setMessages((current) => [
         ...current,
         { role: "assistant", content: response.ok ? data.message.content : data.error ?? "发送失败" },
@@ -44,11 +75,14 @@ export function InterviewSessionClient({ sessionId }: InterviewSessionClientProp
     <main className="grid min-h-screen gap-4 p-4 lg:grid-cols-[260px_1fr_320px]">
       <aside className="rounded-lg border border-gray-200 bg-white p-4">
         <p className="text-sm font-medium text-blue-600">Interview Agent</p>
-        <h1 className="mt-2 text-lg font-semibold">模拟面试</h1>
+        <h1 className="mt-2 text-lg font-semibold">{identityName}</h1>
         <div className="mt-6 space-y-2">
-          <Button variant="secondary" className="w-full" onClick={() => setMessages([{ role: "assistant", content: "新一轮开始。" }])}>
-            重置聊天
-          </Button>
+          <Link
+            className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-700"
+            href={`/identities?role=${userRole}`}
+          >
+            返回身份
+          </Link>
           <Link
             className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white"
             href={`/interview/${sessionId}/report`}
@@ -63,7 +97,11 @@ export function InterviewSessionClient({ sessionId }: InterviewSessionClientProp
         onInput={setInput}
         onSend={send}
       />
-      <ContextSidePanel progress={`${Math.max(messages.length - 1, 0)} 条消息`} />
+      <ContextSidePanel
+        jdSummary={jdSummary || "暂无 JD"}
+        progress={`${Math.max(messages.length - 1, 0)} 条消息；${cacheStats}`}
+        memorySummary={memorySummary || "暂无记忆"}
+      />
     </main>
   );
 }

@@ -8,16 +8,24 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:js": "vitest run",
+    "test:python": "python -m unittest tests.planning.test_next_step_planner",
+    "test:all": "npm run test:js && npm run test:python",
     "test:watch": "vitest",
+    "eval:lightweight": "tsx scripts/run-lightweight-eval.ts",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
+    "@napi-rs/canvas": "^0.1.80",
+    "@prisma/client": "^6.19.3",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
     "nanoid": "^5.1.11",
-    "next": "16.2.5",
+    "next": "^16.2.6",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.5.0",
@@ -26,15 +34,18 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.5",
-    "prisma": "^6.19.0",
+    "eslint-config-next": "^16.2.6",
+    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "postcss": "8.5.14"
   }
 }
