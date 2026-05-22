@@ -12,6 +12,16 @@ describe("server environment validation", () => {
     ).not.toThrow();
   });
 
+  it("accepts the deployment fallback secret when APP_SECRET is absent", () => {
+    expect(() =>
+      validateServerEnv({
+        NODE_ENV: "production",
+        DATABASE_URL: "postgresql://interview:secret@db:5432/interview_agent",
+        INTERVIEW_AGENT_SECRET: "a-production-fallback-secret-with-at-least-32-characters",
+      }),
+    ).not.toThrow();
+  });
+
   it("rejects production SQLite and placeholder secrets", () => {
     expect(() =>
       validateServerEnv({

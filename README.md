@@ -69,6 +69,7 @@ cp .env.example .env.local
 ```bash
 DATABASE_URL="postgresql://..."
 APP_SECRET="replace-with-a-long-random-secret-at-least-32-chars"
+INTERVIEW_AGENT_SECRET="" # 可选：线上 APP_SECRET 取不到时的备用密钥
 LLM_BASE_URL="https://api.deepseek.com"
 LLM_MODEL="deepseek-v4-flash"
 OPENAI_API_KEY=""

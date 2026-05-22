@@ -1,12 +1,9 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { resolveAppSecret, resolveProductionAppSecret } from "@/lib/env/app-secret";
 
 function getEncryptionKey() {
-  const secret = process.env.APP_SECRET;
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("APP_SECRET is required to encrypt identity secrets in production");
-  }
-
-  return createHash("sha256").update(secret || "interview-agent-local-development-secret").digest();
+  const secret = process.env.NODE_ENV === "production" ? resolveProductionAppSecret() : resolveAppSecret();
+  return createHash("sha256").update(secret).digest();
 }
 
 export function hashPassword(password: string) {

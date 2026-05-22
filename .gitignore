@@ -34,6 +34,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 dev-server*.log
+.codex-*-server*.log
 
 # local sqlite
 prisma/dev.db

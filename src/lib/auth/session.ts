@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { resolveAppSecret } from "@/lib/env/app-secret";
 
 const TOKEN_VERSION = "v1";
 const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -19,21 +20,12 @@ type TokenOptions = {
   ttlMs?: number;
 };
 
-function getSessionSecret(explicitSecret?: string) {
-  return (
-    explicitSecret ||
-    process.env.APP_SECRET ||
-    process.env.INTERVIEW_AGENT_SECRET ||
-    "interview-agent-local-development-secret"
-  );
-}
-
 function base64Url(input: string | Buffer) {
   return Buffer.from(input).toString("base64url");
 }
 
 function sign(payload: string, secret?: string) {
-  return createHmac("sha256", getSessionSecret(secret)).update(payload).digest("base64url");
+  return createHmac("sha256", resolveAppSecret(secret)).update(payload).digest("base64url");
 }
 
 function safeEqualText(left: string, right: string) {
